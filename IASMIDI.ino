@@ -1,7 +1,7 @@
 /*
   IASMidi V1.0.4
 
-  This is to provide an interface to control a single Sterio Matrix on an Allen & Heath dLive mixing console using MIDI commands.
+  This is to provide an interface to control a single Stereo Matrix on an Allen & Heath dLive mixing console using MIDI commands.
 
   Origional Copyright / Licence message:
 */
