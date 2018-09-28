@@ -9,16 +9,30 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiUdp.h>
+#define PACKET_MAX_SIZE 500
+
 #include "AppleMidi.h"
 
 APPLEMIDI_CREATE_INSTANCE(WiFiUDP, AppleMIDI);
 
 char* midi_session = "dlive";
 bool midi_is_connected = false;
+unsigned long mini_last_query_at = millis();
+unsigned int midi_name_update_frequency = 10000;
+
+// 0x00 - Inputs
+// 0x01 - Groups
+// 0x02 - Aux
+// 0x03 - Matrix
+// 0x04 - Sends, Returns, Mains, DCAs, Mute Groups, etc.
+
+int midi_channel_number =    0x03;
+int midi_channel_selection = 0x41;
+String midi_channel_name = "";
 
 void midi_send_sys_ex()
 {   
-  Serial.println("SysEX: Sending Stero Matrix 1 name request");
+  Serial.println("SysEX: Sending name request");
   byte data[256];
 
   for (int i = 0; i < sizeof(data); i++)
@@ -32,13 +46,13 @@ void midi_send_sys_ex()
   data[5] =  0x10;
   data[6] =  0x01;
   data[7] =  0x00;
-  data[8] =  0x03;
+  data[8] =  midi_channel_number;
   data[9] =  0x01;
-  data[10] = 0x40;
+  data[10] = midi_channel_selection;
   
   data[sizeof(data) - 1] = 0xF7;
 
-  AppleMIDI.sysEx(data, sizeof(data));
+  AppleMIDI.sysEx(data, 12);
 }
 
 void OnAppleMidiDisconnected(uint32_t ssrc) {
@@ -87,12 +101,12 @@ char getSysExStatus(const byte* data, uint16_t length)
 
 void OnAppleMidiSysExChannelName(const byte* data, uint16_t length) {
   int channel = data[10];
-
+  midi_channel_name = String("");
   for (int i = 11; i < (length - 1); i++)
   {
-    Serial.print(char(data[i]));
-    Serial.print(" ");
-  }  
+    midi_channel_name += char(data[i]);
+  }
+  Serial.println(midi_channel_name);
 }
 
 bool midi_is_name_header(const byte* data, uint16_t length) {
@@ -124,11 +138,16 @@ void midi_setup()
   AppleMIDI.OnConnected(OnAppleMidiConnected);
   AppleMIDI.OnDisconnected(OnAppleMidiDisconnected);
   AppleMIDI.OnReceiveSysEx(OnAppleMidiSysEx);
+  midi_send_sys_ex();
 }
 
 void midi_loop()
 {
   AppleMIDI.run();
+  if (midi_is_connected && ((millis() - mini_last_query_at) > midi_name_update_frequency)) {
+    mini_last_query_at = millis(); 
+    midi_send_sys_ex();
+  }
 }
 
 
