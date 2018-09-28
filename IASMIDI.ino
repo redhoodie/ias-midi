@@ -1,5 +1,5 @@
 /*
-  IASMidi V1.0.4
+  IASMidi V0.0.1
 
   This is to provide an interface to control a single Stereo Matrix on an Allen & Heath dLive mixing console using MIDI commands.
 
