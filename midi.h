@@ -16,18 +16,6 @@ APPLEMIDI_CREATE_INSTANCE(WiFiUDP, AppleMIDI);
 char* midi_session = "dlive";
 bool midi_is_connected = false;
 
-void array_to_string(const byte array[], unsigned int len, char buffer[])
-{
-    for (unsigned int i = 0; i < len; i++)
-    {
-        byte nib1 = (array[i] >> 4) & 0x0F;
-        byte nib2 = (array[i] >> 0) & 0x0F;
-        buffer[i*2+0] = nib1  < 0xA ? '0' + nib1  : 'A' + nib1  - 0xA;
-        buffer[i*2+1] = nib2  < 0xA ? '0' + nib2  : 'A' + nib2  - 0xA;
-    }
-    buffer[len*2] = '\0';
-}
-
 void midi_send_sys_ex()
 {   
   Serial.println("SysEX: Sending Stero Matrix 1 name request");
@@ -107,8 +95,12 @@ void OnAppleMidiSysExChannelName(const byte* data, uint16_t length) {
   }  
 }
 
+bool midi_is_name_header(const byte* data, uint16_t length) {
+  return data[0] == 0xF0 && data[1] == 0x0 && data[2] == 0x0 && data[3] == 0x1A && data[4] == 0x50  && data[5] == 0x10 && data[6] == 0x1 && data[7] == 0x0 && data[8] == 0x3 && data[9] == 0x2;
+}
+
 void OnAppleMidiSysEx(const byte* data, uint16_t length) {
-  if (data[0] == 0xF0 && data[1] == 0x0 && data[2] == 0x0 && data[3] == 0x1A && data[4] == 0x50  && data[5] == 0x10 && data[6] == 0x1 && data[7] == 0x0 && data[8] == 0x3 && data[9] == 0x2) {
+  if (midi_is_name_header(data, length)) {
     OnAppleMidiSysExChannelName(data, length);
   }
   else {
